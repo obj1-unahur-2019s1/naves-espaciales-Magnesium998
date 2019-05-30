@@ -17,18 +17,22 @@ class NaveEspacial {
 	method cargarCombustible(litros) {combustible += litros}
 	method descargarCombustible(litros) {combustible -= litros}
 	
-	method prepararViaje() {self.cargarCombustible(3000) ; self.acelerar(5000)}
+	method prepararViaje() {self.cargarCombustible(30000) ; self.acelerar(5000)}
+	
+	method estaTranquila() = (combustible >= 4000) and (velocidad <= 12000)
 }
 
 class NaveBaliza inherits NaveEspacial{
-	const rojo = "Rojo"
-	const verde = "Verde"
-	const azul = "Azul"
+	var color = "Verde"
 	
-	method cambiarColorDeBaliza(colorNuevo) = colorNuevo
+	method cambiarColorDeBaliza(colorNuevo) {color = colorNuevo}
 	
-	override method prepararViaje() {super() ; self.cambiarColorDeBaliza(verde)
+	override method prepararViaje() {super() ; self.cambiarColorDeBaliza("Verde")
 									 self.ponerseParaleloAlSol()}
+									 
+	method recibirAmenaza() {self.irHaciaElSol() ; self.cambiarColorDeBaliza("Rojo")}
+	
+	override method estaTranquila() = super() and (color != "Rojo")
 }
 
 class NavePasajeros inherits NaveEspacial{
@@ -37,18 +41,21 @@ class NavePasajeros inherits NaveEspacial{
 	var property pasajeros 
 	
 	method cargarComida(numero) {racionesDeComida += numero}
-	method descargarComda(numero) {racionesDeComida -= numero}
+	method descargarComida(numero) {racionesDeComida -= numero}
 	method cargarBebida(numero) {racionesDeBebida += numero}
 	method descargarBebida(numero) {racionesDeBebida -= numero}
 	
 	override method prepararViaje() {super() ; self.cargarComida(pasajeros*4)
 									 self.cargarBebida(pasajeros*6) ; self.acercarseUnPocoAlSol()}
+	
+	method recibirAmenaza() {self.velocidad(velocidad*2) ; self.descargarComida(pasajeros)
+							 self.descargarBebida(pasajeros*2) }
 }
 
 class NaveDeCombate inherits NaveEspacial{
-	var property visible
-	var property misiles
-	var property mensajes = []
+	var visible
+	var misiles
+	var mensajes = []
 	
 	method ponerseVisible() {visible = true}
 	method ponerseInvisible() {visible = false}
@@ -62,9 +69,31 @@ class NaveDeCombate inherits NaveEspacial{
 	method mensajesEmitidos() = mensajes.size()
 	method primerMensajeEmitido() = mensajes.first()
 	method ultimoMensajeEmitido() = mensajes.last()
-	method esEscueta() {}
-	method emitioMensaje(mensaje) = mensajes.any(mensaje)
+	method esEscueta() = mensajes.all{m => m.size() <= 30} 
+	method emitioMensaje(mensaje) = mensajes.contains(mensaje)
 	
 	override method prepararViaje() {super() ; self.ponerseVisible()
-									self.desplegarMisiles() ; self.acelerar(1500) ; self.emitirMensaje("Saliendo en mision") }
+		                             self.acelerar(15000) ; self.desplegarMisiles()
+									 self.emitirMensaje("Saliendo en mision")}
+	
+	method recibirAmenaza() {self.acercarseUnPocoAlSol() ; self.acercarseUnPocoAlSol()
+							 self.emitirMensaje("Amenaza Recibida")	}
+	
+	override method estaTranquila() = super() and (not misiles)
+}
+
+
+class NaveHospital inherits NavePasajeros {
+	var quirofanos
+	
+	method quirofanosRegistrados() = quirofanos
+	override method recibirAmenaza() {super() ; quirofanos = true}
+	
+	override method estaTranquila() = super() and (not quirofanos)
+}
+
+class NaveCombateSigilosa inherits NaveDeCombate {
+	override method recibirAmenaza() {super() ; self.desplegarMisiles()
+									  self.ponerseInvisible()}
+	override method estaTranquila() = super() and visible
 }
